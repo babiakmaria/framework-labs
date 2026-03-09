@@ -1,4 +1,5 @@
 const { createServer } = require("node:http");
+const config = require("./config");
 
 let BOOKS = [
     {
@@ -9,8 +10,8 @@ let BOOKS = [
     }
 ];
 
-const PORT = process.env.PORT || 3000;
-const HOSTNAME = process.env.HOSTNAME || "localhost";
+const PORT = config.PORT;
+const HOSTNAME = config.HOSTNAME;
 
 const server = createServer((req, res) => {
     const method = req.method;
@@ -19,7 +20,31 @@ const server = createServer((req, res) => {
 
 
     res.setHeader("Content-Type", "application/json; charset=utf-8");
-  
+
+///testing
+    if (method === "GET" && pathname === "/crash") {
+        nonExistingFunction();
+    }
+    
+    // test: unhandledRejection
+    if (method === "GET" && pathname === "/reject") {
+        Promise.reject(new Error("Test rejection"));
+    }
+///
+    if (method === "GET" && pathname === "/health") {
+        res.statusCode = 200;
+        logRequest(method, pathname, res.statusCode);
+
+        return res.end(
+            JSON.stringify({
+                pid: process.pid,
+                nodeVersion: process.version,
+                platform: process.platform,
+                uptime: process.uptime(),
+                memoryUsage: process.memoryUsage()
+            })
+        );
+    }
     if (method === "GET" && pathname === "/books") {
     const author = parsedUrl.searchParams.get("author");
 
@@ -31,6 +56,8 @@ const server = createServer((req, res) => {
         );
     }
     res.statusCode = 200;
+    logRequest(method, pathname, res.statusCode);
+
     return res.end(
         JSON.stringify({
             count: results.length,
@@ -51,16 +78,19 @@ const server = createServer((req, res) => {
                 const data = JSON.parse(body);
                         if (!data.title || typeof data.title !== "string") {
                     res.statusCode = 400;
+                    logRequest(method, pathname, res.statusCode);
                     return res.end(JSON.stringify({ error: "Valid title is required" }));
                 }
         
                 if (!data.author || typeof data.author !== "string") {
                     res.statusCode = 400;
+                    logRequest(method, pathname, res.statusCode);
                     return res.end(JSON.stringify({ error: "Valid author is required" }));
                 }
         
                 if (!data.year || typeof data.year !== "number") {
                     res.statusCode = 400;
+                    logRequest(method, pathname, res.statusCode);
                     return res.end(JSON.stringify({ error: "Valid year is required" }));
                 }
         
@@ -77,14 +107,15 @@ const server = createServer((req, res) => {
                 BOOKS.push(newBook);
         
                 res.statusCode = 201;
+                logRequest(method, pathname, res.statusCode);
+
                 res.end(JSON.stringify({ message: "Book created", book: newBook }));
-        
             }   catch (err) {
                 res.statusCode = 400;
+                logRequest(method, pathname, res.statusCode);
                 res.end(JSON.stringify({ error: "Invalid JSON" }));
             }
         });
-    
         return;
     }
     
@@ -94,6 +125,7 @@ if (method === "PUT" && pathname.startsWith("/books/")) {
 
     if (isNaN(id)) {
         res.statusCode = 400;
+        logRequest(method, pathname, res.statusCode);
         return res.end(JSON.stringify({ error: "Invalid ID" }));
     }
 
@@ -111,22 +143,26 @@ if (method === "PUT" && pathname.startsWith("/books/")) {
 
             if (index === -1) {
                 res.statusCode = 404;
+                logRequest(method, pathname, res.statusCode);
                 return res.end(JSON.stringify({ error: "Book not found" }));
             }
 
             // Full validation (all fields required for PUT)
             if (!data.title || typeof data.title !== "string") {
                 res.statusCode = 400;
+                logRequest(method, pathname, res.statusCode);
                 return res.end(JSON.stringify({ error: "Valid title is required" }));
             }
 
             if (!data.author || typeof data.author !== "string") {
                 res.statusCode = 400;
+                logRequest(method, pathname, res.statusCode);
                 return res.end(JSON.stringify({ error: "Valid author is required" }));
             }
 
             if (!data.year || typeof data.year !== "number") {
                 res.statusCode = 400;
+                logRequest(method, pathname, res.statusCode);
                 return res.end(JSON.stringify({ error: "Valid year is required" }));
             }
 
@@ -138,6 +174,7 @@ if (method === "PUT" && pathname.startsWith("/books/")) {
             };
 
             res.statusCode = 200;
+            logRequest(method, pathname, res.statusCode);
             res.end(JSON.stringify({
                 message: "Book fully replaced",
                 book: BOOKS[index]
@@ -145,10 +182,10 @@ if (method === "PUT" && pathname.startsWith("/books/")) {
 
         } catch (err) {
             res.statusCode = 400;
+            logRequest(method, pathname, res.statusCode);
             res.end(JSON.stringify({ error: "Invalid JSON" }));
         }
     });
-
     return;
 }
 
@@ -158,6 +195,7 @@ if (method === "PUT" && pathname.startsWith("/books/")) {
     
         if (isNaN(id)) {
             res.statusCode = 400;
+            logRequest(method, pathname, res.statusCode);
             return res.end(JSON.stringify({ error: "Invalid ID" }));
         }
     
@@ -175,6 +213,7 @@ if (method === "PUT" && pathname.startsWith("/books/")) {
         
                 if (index === -1) {
                     res.statusCode = 404;
+                    logRequest(method, pathname, res.statusCode);
                     return res.end(JSON.stringify({ error: "Book not found" }));
                 }
         
@@ -184,22 +223,26 @@ if (method === "PUT" && pathname.startsWith("/books/")) {
         
                 if (updates.title && typeof updates.title !== "string") {
                     res.statusCode = 400;
+                    logRequest(method, pathname, res.statusCode);
                     return res.end(JSON.stringify({ error: "Invalid title" }));
                 }
         
                 if (updates.author && typeof updates.author !== "string") {
                     res.statusCode = 400;
+                    logRequest(method, pathname, res.statusCode);
                     return res.end(JSON.stringify({ error: "Invalid author" }));
                 }
         
                 if (updates.year && typeof updates.year !== "number") {
                     res.statusCode = 400;
+                    logRequest(method, pathname, res.statusCode);
                     return res.end(JSON.stringify({ error: "Invalid year" }));
                 }
         
                 BOOKS[index] = { ...BOOKS[index], ...updates };
         
                 res.statusCode = 200;
+                logRequest(method, pathname, res.statusCode);
                 res.end(JSON.stringify({
                     message: "Book updated",
                     book: BOOKS[index]
@@ -207,10 +250,10 @@ if (method === "PUT" && pathname.startsWith("/books/")) {
         
             }   catch (err) {
                 res.statusCode = 400;
+                logRequest(method, pathname, res.statusCode);
                 res.end(JSON.stringify({ error: "Invalid JSON" }));
             }
         });
-    
         return;
     }
 
@@ -220,6 +263,7 @@ if (method === "PUT" && pathname.startsWith("/books/")) {
     
         if (isNaN(id)) {
             res.statusCode = 400;
+            logRequest(method, pathname, res.statusCode);
             return res.end(JSON.stringify({ error: "Invalid ID" }));
         }
     
@@ -228,18 +272,64 @@ if (method === "PUT" && pathname.startsWith("/books/")) {
     
         if (BOOKS.length < originalLength) {
             res.statusCode = 200;
+            logRequest(method, pathname, res.statusCode);
             return res.end(JSON.stringify({ message: "Book deleted" }));
         } else {
             res.statusCode = 404;
+            logRequest(method, pathname, res.statusCode);
             return res.end(JSON.stringify({ error: "Book not found" }));
         }
     }
 
   // 404
     res.statusCode = 404;
+    logRequest(method, pathname, res.statusCode);
     res.end(JSON.stringify({ error: "Route not found" }));
 });
 
 server.listen(PORT, HOSTNAME, () => {
     console.log(`Server running at http://${HOSTNAME}:${PORT}/`);
+});
+
+function getDate() {
+  const now = new Date();
+
+  const pad = (n) => String(n).padStart(2, "0");
+
+  return `${pad(now.getDate())}.${pad(now.getMonth() + 1)}.${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+}
+
+function logRequest(method, url, status) {
+  if (config.NODE_ENV === "development") {
+    console.log(`[${getDate()}] [INFO] - - > ${method} ${url} | Status: ${status}`);
+  } else if (config.NODE_ENV === "production" && status >= 400) {
+    console.log(`[${getDate()}] [ERROR] - - > ${method} ${url} | Status: ${status}`);
+  }
+}
+
+function gracefulShutdown(signal) {
+  console.log(`[${getDate()}] [INFO] Received ${signal}. Shutting down server...`);
+
+  server.close(() => {
+    console.log(`[${getDate()}] [INFO] Server closed`);
+    process.exit(0);
+  });
+
+  setTimeout(() => {
+    console.error(`[${getDate()}] [ERROR] Force shutdown`);
+    process.exit(1);
+  }, 5000);
+}
+
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+  gracefulShutdown("uncaughtException");
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled Rejection:", reason);
+  gracefulShutdown("unhandledRejection");
 });
