@@ -300,36 +300,42 @@ function getDate() {
 }
 
 function logRequest(method, url, status) {
+  let level = "INFO";
+  if (status >= 400 && status < 500) level = "WARN";
+  if (status >= 500) level = "ERROR";
+
+  const logMessage = `[${getDate()}] [${level}] - - > ${method} ${url} | Status: ${status}`;
+
   if (config.NODE_ENV === "development") {
-    console.log(`[${getDate()}] [INFO] - - > ${method} ${url} | Status: ${status}`);
+    console.log(logMessage);
   } else if (config.NODE_ENV === "production" && status >= 400) {
-    console.log(`[${getDate()}] [ERROR] - - > ${method} ${url} | Status: ${status}`);
+    console.error(logMessage); 
   }
 }
 
 function gracefulShutdown(signal) {
-  console.log(`[${getDate()}] [INFO] Received ${signal}. Shutting down server...`);
-
-  server.close(() => {
-    console.log(`[${getDate()}] [INFO] Server closed`);
-    process.exit(0);
-  });
-
-  setTimeout(() => {
-    console.error(`[${getDate()}] [ERROR] Force shutdown`);
-    process.exit(1);
-  }, 5000);
+    console.log(`[${getDate()}] [WARN] Received ${signal}. Shutting down server...`);
+  
+    server.close(() => {
+        console.log(`[${getDate()}] [INFO] Server closed`);
+        process.exit(0);
+    });
+  
+    setTimeout(() => {
+        console.error(`[${getDate()}] [ERROR] Force shutdown`);
+        process.exit(1);
+    }, 10000); 
 }
 
 process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 
 process.on("uncaughtException", (err) => {
-  console.error("Uncaught Exception:", err);
-  gracefulShutdown("uncaughtException");
+    console.error(`[${getDate()}] [ERROR] Uncaught Exception:`, err.message);
+    gracefulShutdown("uncaughtException");
 });
 
 process.on("unhandledRejection", (reason) => {
-  console.error("Unhandled Rejection:", reason);
-  gracefulShutdown("unhandledRejection");
+    console.error(`[${getDate()}] [ERROR] Unhandled Rejection:`, reason.message || reason);
+    gracefulShutdown("unhandledRejection");
 });
