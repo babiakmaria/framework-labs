@@ -1,10 +1,9 @@
-import userController from '../controllers/user.controller.js';
 import * as userRepository from '../repositories/user.repository.js';
-import formatter from '../utils/formatter';
-import rolesMap from '../data/roles.json';
+import roles from '../data/roles.json' with { type: 'json' };
+import formatter from '../utils/formatter.mjs'; 
 
 export const initPermissions = () => {
-    console.log("Initializing permissions for controller:", typeof userController);
+    console.log("Permissions initialized");
 };
 
 export const getPublicUsers = async () => {
@@ -13,10 +12,6 @@ export const getPublicUsers = async () => {
     return users.map(u => ({ 
         id: u.id, 
         name: formatter.formatName(u.name),
-        roleName: rolesMap[u.id] || 'Unknown' 
+        roleName: roles[u.roleId] || 'Unknown' 
     }));
-};
-
-export const getUserFormatted = async (id, reply) => {
-    return userController.getUserById({ params: { id } }, reply);
 };

@@ -1,18 +1,18 @@
 import * as userRepository from '../repositories/user.repository.js';
-import { count } from '../state/request-counter.js';
+import { increment } from '../state/request-counter.js';
 import { initPermissions } from '../services/user.service.js';
 
 initPermissions();
 
 export const getUsers = async (request, reply) => {
-  count++;
+  increment();
 
   const users = await userRepository.findAll();
   return { users };
 };
 
 const getUserById = async (request, reply) => {
-  count++;
+  increment();
   const { id } = request.params;
   const user = await userRepository.findById(id);
   if (!user) {
@@ -22,5 +22,6 @@ const getUserById = async (request, reply) => {
 };
 
 export default {
+  getUsers,
   getUserById
 };

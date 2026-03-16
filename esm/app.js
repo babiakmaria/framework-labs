@@ -1,5 +1,8 @@
 import fastify from 'fastify';
 import config from './config/env.js';
+import apiRoutes from './routes/api.routes.js';
+import errorHandler from './plugins/error-handler/index.js';
+
 
 export function buildApp() {
   const app = fastify({ logger: true });
@@ -12,3 +15,5 @@ export function buildApp() {
 
   return app;
 }
+
+export default buildApp;

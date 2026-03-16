@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const backupPath = path.join(__dirname, '../data/backup.json');
+const backupPath = path.join(import.meta.dirname, '../data/backup.json');
 
 const users = [
   { id: 1, name: 'Charlie', role: 'admin' },
