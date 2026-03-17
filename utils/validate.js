@@ -1,6 +1,6 @@
-const ajv = require('#config/ajv');
+import ajv from '#config/ajv';
 
-function validate(schema, type = 'body') {
+const validate = (schema, type = 'body') => {
   const validateFn = ajv.compile(schema);
 
   return (request, reply, done) => {
@@ -20,4 +20,4 @@ function validate(schema, type = 'body') {
   };
 }
 
-module.exports = validate;
+export default validate;

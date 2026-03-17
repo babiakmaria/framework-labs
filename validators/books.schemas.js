@@ -1,5 +1,6 @@
-const bookSchema = {
+export const bookBodySchema = {
   type: 'object',
+  required: ['title', 'author', 'year'], 
   properties: {
     title: { 
       type: 'string', 
@@ -18,7 +19,7 @@ const bookSchema = {
   additionalProperties: false
 };
 
-const bookIdParamSchema = {
+export const bookParamsSchema = {
   type: 'object',
   required: ['id'],
   properties: {
@@ -26,7 +27,7 @@ const bookIdParamSchema = {
   }
 };
 
-const bookUpdateSchema = {
+export const bookUpdateSchema = {
   type: 'object',
   properties: {
     title: { type: 'string', minLength: 1 },
@@ -36,9 +37,11 @@ const bookUpdateSchema = {
   additionalProperties: false 
 };
 
-module.exports = { 
-  bookBodySchema: bookSchema,       
-  bookParamsSchema: bookIdParamSchema, 
-  bookQuerySchema: { type: 'object', properties: {} },
-  bookUpdateSchema
+export const bookQuerySchema = { 
+  type: 'object', 
+  properties: {
+    author: { type: 'string' },
+    year: { type: 'integer' }
+  },
+  additionalProperties: false 
 };

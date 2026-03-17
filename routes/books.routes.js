@@ -1,14 +1,13 @@
-const booksController = require('#controllers/books.controller');
-const validate = require('#utils/validate');
-
-const {
+import booksController from '#controllers/books.controller';
+import validate from '#utils/validate';
+import {
   bookBodySchema,
   bookParamsSchema,
   bookQuerySchema,
   bookUpdateSchema,
-} = require('#validators/books.schemas');
+} from '#validators/books.schemas'
 
-module.exports = async function (fastify) {
+export default async function (fastify) {
   fastify.get(
     '/books',
     {

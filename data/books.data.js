@@ -1,4 +1,4 @@
-let BOOKS = [
+export let BOOKS = [
   {
     id: 1,
     title: "Demon Copperhead",
@@ -6,5 +6,3 @@ let BOOKS = [
     year: 2022,
   },
 ];
-
-module.exports = { BOOKS };

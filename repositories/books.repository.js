@@ -1,4 +1,4 @@
-const { BOOKS } = require('#data/books.data');
+import { BOOKS } from '#data/books.data';
 
 class BooksRepository {
   getAll() {
@@ -37,4 +37,4 @@ class BooksRepository {
   }
 }
 
-module.exports = new BooksRepository();
+export default new BooksRepository();

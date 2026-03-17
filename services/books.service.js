@@ -1,4 +1,4 @@
-const booksRepository = require('#repositories/books.repository');
+import booksRepository from '#repositories/books.repository';
 
 class BooksService {
   getAll(query) {
@@ -45,4 +45,4 @@ class BooksService {
   }
 }
 
-module.exports = new BooksService();
+export default new BooksService();

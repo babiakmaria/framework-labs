@@ -7,14 +7,14 @@
   },
   "imports": {
     "#config/*": "./config/*.js",
-    "#constants/*": "./constants/*.js",
+    "#schemas/*": "./schemas/*.js",
     "#controllers/*": "./controllers/*.js",
-    "#data/*": "./data/*.js",
-    "#repositories/*": "./repositories/*.js",
     "#routes/*": "./routes/*.js",
     "#services/*": "./services/*.js",
+    "#repositories/*": "./repositories/*.js",
+    "#validators/*": "./validators/*.js",
     "#utils/*": "./utils/*.js",
-    "#validators/*": "./validators/*.js"
+    "#data/*": "./data/*.js"
   },
   "description": "",
   "main": "app.js",
@@ -36,7 +36,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/babiakmaria/framework-labs/issues"
   },

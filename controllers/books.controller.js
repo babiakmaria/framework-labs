@@ -1,4 +1,4 @@
-const booksService = require('#services/books.service');
+import booksService from '#services/books.service';
 
 class BooksController {
   getAll(request, reply) {
@@ -52,4 +52,4 @@ class BooksController {
   }
 }
 
-module.exports = new BooksController();
+export default new BooksController();
