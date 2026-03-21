@@ -13,6 +13,7 @@
     "sourceType": "module"
   },
   "rules": {
+    "no-process-env": "error",
     "no-console": "warn",
     "import/extensions": ["error", "always"],
     "consistent-return": "error",

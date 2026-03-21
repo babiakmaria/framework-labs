@@ -1,65 +1,28 @@
 import booksController from '#controllers/books.controller';
-import validate from '#utils/validate';
 import {
-  bookBodySchema,
-  bookParamsSchema,
-  bookQuerySchema,
-  bookUpdateSchema,
-} from '#validators/books.schemas'
+  createBookSchema,
+  getBooksSchema,
+  updateBookSchema,
+  deleteBookSchema
+} from '../schemas/books.schemas.js';
 
 export default async function (fastify) {
-  fastify.get(
-    '/books',
-    {
-      preHandler: [validate(bookQuerySchema, 'query')],
-    },
-    booksController.getAll
-  );
+  fastify.get('/books', getBooksSchema, booksController.getAll);
 
-  fastify.get(
-    '/books/:id',
-    {
-      preHandler: [validate(bookParamsSchema, 'params')],
-    },
-    booksController.getById
-  );
+  fastify.get('/books/:id', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'integer', minimum: 1 }
+        }
+      }
+    }
+  }, booksController.getById);
 
-  fastify.post(
-    '/books', 
-    {
-      preHandler: [
-        validate(bookBodySchema, 'body')
-      ], 
-    }, booksController.create
-  );
-
-  fastify.put(
-    '/books/:id',
-    {
-      preHandler: [
-        validate(bookParamsSchema, 'params'),
-        validate(bookBodySchema, 'body'),
-      ],
-    },
-    booksController.update
-  );
-
-  fastify.patch(
-    '/books/:id',
-    {
-      preHandler: [
-        validate(bookParamsSchema, 'params'),
-        validate(bookUpdateSchema, 'body'), 
-      ],
-    },
-    booksController.patch 
-  );
-
-  fastify.delete(
-    '/books/:id',
-    {
-      preHandler: [validate(bookParamsSchema, 'params')],
-    },
-    booksController.delete
-  );
-};
+  fastify.post('/books', createBookSchema, booksController.create);
+  fastify.put('/books/:id', updateBookSchema, booksController.update);
+  fastify.patch('/books/:id', updateBookSchema, booksController.patch);
+  fastify.delete('/books/:id', deleteBookSchema, booksController.delete);
+}
