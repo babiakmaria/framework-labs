@@ -1,22 +1,18 @@
-import 'dotenv/config';
 import Fastify from 'fastify';
 import registerRoutes from './routes/books.routes.js';
 import envPlugin from './config/env.js';
-
-const fastify = Fastify({
-  logger: process.env.NODE_ENV === 'development'
-    ? {
-        level: 'info',
-        transport: {
-          target: 'pino-pretty'
-        }
-      }
-    : {
-        level: 'error'
-      }
-});
-
+const fastify = Fastify({ logger: true });
 await fastify.register(envPlugin);
+
+if (fastify.config.NODE_ENV === 'development') {
+  fastify.log.level = 'info';
+  fastify.log.transport = {
+    target: 'pino-pretty'
+  };
+} else {
+  fastify.log.level = 'error';
+}
+
 await fastify.register(import('@fastify/sensible'));
 await fastify.register(import('@fastify/cors'), {
   origin: fastify.config.NODE_ENV === 'development'
