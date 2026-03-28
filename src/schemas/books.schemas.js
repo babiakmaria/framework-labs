@@ -16,6 +16,13 @@ export const createBookSchema = {
           type: 'integer',
           minimum: 1000,
           maximum: new Date().getFullYear()
+        },
+          genre: {
+          type: 'string',
+          minLength: 3
+        },
+        image: {
+        type: ['string', 'null']
         }
       },
       additionalProperties: false
@@ -25,10 +32,12 @@ export const createBookSchema = {
       201: {
         type: 'object',
         properties: {
-          id: { type: 'integer' },
+          id: { type: 'string' },
           title: { type: 'string' },
           author: { type: 'string' },
-          year: { type: 'integer' }
+          year: { type: 'integer' },
+          genre: { type: 'string' },
+          image: { type: ['string', 'null'] }
         }
       }
     }
@@ -41,7 +50,8 @@ export const getBooksSchema = {
       type: 'object',
       properties: {
         author: { type: 'string' },
-        year: { type: 'integer' }
+        year: { type: 'integer' },
+        genre: { type: 'string' }
       },
       additionalProperties: false
     },
@@ -52,10 +62,12 @@ export const getBooksSchema = {
         items: {
           type: 'object',
           properties: {
-            id: { type: 'integer' },
+            id: { type: 'string' },
             title: { type: 'string' },
             author: { type: 'string' },
-            year: { type: 'integer' }
+            year: { type: 'integer' },
+            genre: { type: 'string' },
+            image: { type: ['string', 'null'] }
           }
         }
       }
@@ -69,7 +81,7 @@ export const updateBookSchema = {
       type: 'object',
       required: ['id'],
       properties: {
-        id: { type: 'integer', minimum: 1 }
+        id: { type: 'string' }
       }
     },
 
@@ -78,7 +90,9 @@ export const updateBookSchema = {
       properties: {
         title: { type: 'string', minLength: 1 },
         author: { type: 'string', minLength: 2 },
-        year: { type: 'integer', minimum: 1000 }
+        year: { type: 'integer', minimum: 1000 },
+        genre: { type: 'string', minLength: 3 },
+        image: { type: ['string', 'null'] }
       },
       additionalProperties: false
     },
@@ -87,10 +101,12 @@ export const updateBookSchema = {
       200: {
         type: 'object',
         properties: {
-          id: { type: 'integer' },
+          id: { type: 'string' },
           title: { type: 'string' },
           author: { type: 'string' },
-          year: { type: 'integer' }
+          year: { type: 'integer' },
+          genre: { type: 'string' },
+          image: { type: ['string', 'null'] }
         }
       }
     }
@@ -103,7 +119,7 @@ export const deleteBookSchema = {
       type: 'object',
       required: ['id'],
       properties: {
-        id: { type: 'integer', minimum: 1 }
+        id: { type: 'string' }
       }
     },
 

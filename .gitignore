@@ -1,2 +1,5 @@
 .env
 node_modules
+data/items/*.json
+uploads/
+data/backups/

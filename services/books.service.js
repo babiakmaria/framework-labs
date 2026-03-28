@@ -1,47 +1,61 @@
-import booksRepository from '#repositories/books.repository';
+import booksRepository from '../src/repositories/books.repository.js';
 
 class BooksService {
-  getAll(query) {
-    let books = booksRepository.getAll();
+  async getAll(query = {}) { 
+    let books = await booksRepository.getAll();
 
     if (query.author) {
       books = books.filter((b) =>
-        b.author.toLowerCase().includes(query.author.toLowerCase())
+        b.author?.toLowerCase().includes(query.author.toLowerCase())
       );
     }
 
     if (query.year) {
-      books = books.filter((b) => b.year === query.year);
+      books = books.filter((b) => Number(b.year) === Number(query.year));
+    }
+
+    if (query.genre) {
+      books = books.filter((b) =>
+        b.genre?.toLowerCase().includes(query.genre.toLowerCase())
+      );
     }
 
     return books;
   }
 
-  getById(id) {
+  async getById(id) {
     return booksRepository.getById(id);
   }
 
-  create(data) {
-    return booksRepository.create(data);
+  async create(data) {
+    const bookWithImage = {
+      ...data,
+      image: data.image ?? null
+    };
+  
+    return booksRepository.create(bookWithImage);
   }
 
-  update(id, data) {
+  async update(id, data) {
     return booksRepository.update(id, data);
   }
 
-  patch(id, updateData) {
-    const book = this.getById(id);
+  async patch(id, updateData) {
+    const book = await this.getById(id);
+    if (!book) return null;
+    return booksRepository.update(id, { ...book, ...updateData });
+  }
 
+  async delete(id) {
+    const book = await this.getById(id);
+    
     if (!book) {
-      return null;
+      return false; 
     }
 
-    Object.assign(book, updateData);
-
-    return book;
-  }
-  delete(id) {
-    return booksRepository.delete(id);
+    await booksRepository.delete(id);
+    
+    return true; 
   }
 }
 
