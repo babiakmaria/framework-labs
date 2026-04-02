@@ -3,7 +3,7 @@ export default {
   title: "",
   author: "",
   year: 0,
-  genre: "",     
+  genre: "",
   image: null,
   createdAt: new Date().toISOString()
 };

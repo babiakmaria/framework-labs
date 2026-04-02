@@ -1,4 +1,4 @@
-import booksController from '#controllers/books.controller';
+import booksController from '../controllers/books.controller.js';
 import {
   createBookSchema,
   getBooksSchema,

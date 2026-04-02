@@ -1,9 +1,15 @@
-import booksService from '#services/books.service';
+import Ajv from 'ajv';
+import booksService from '../services/books.service.js';
 import { ERROR_MESSAGES } from '../constants/messages.js';
-import { parse } from 'csv-parse/sync'; 
+import { getFullImageUrl } from '../utils/getFullUrl.js';
+import { createBookSchema } from '../schemas/books.schemas.js';
+import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
 import path from 'path';
 import fs from 'fs/promises';
+
+const ajv = new Ajv();
+const validateBook = ajv.compile(createBookSchema.schema.body);
 
 class BooksController {
   async exportItems(request, reply) {
@@ -46,45 +52,33 @@ class BooksController {
     let rejected = [];
 
     for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-  
-    const title = item.title?.toString().trim();
-    const author = item.author?.toString().trim();
-    const genre = item.genre?.toString().trim();
-    const year = Number(item.year);
-  
-    if (!title || !author || !genre || !year) {
-      rejected.push({
-        row: i + 1,
-        reason: 'Missing required fields'
-      });
-      continue;
+      const item = items[i];
+
+      const normalized = {
+        title: item.title?.toString().trim(),
+        author: item.author?.toString().trim(),
+        genre: item.genre?.toString().trim(),
+        year: Number(item.year)
+      };
+
+      if (!validateBook(normalized)) {
+        rejected.push({
+          row: i + 1,
+          reason: ajv.errorsText(validateBook.errors)
+        });
+        continue;
+      }
+
+      try {
+        await booksService.create(normalized);
+        imported++;
+      } catch (error) {
+        rejected.push({
+          row: i + 1,
+          reason: error.message || 'Validation failed'
+        });
+      }
     }
-  
-    if (year < 1000 || year > new Date().getFullYear()) {
-      rejected.push({
-        row: i + 1,
-        reason: 'Invalid year'
-      });
-      continue;
-    }
-  
-    try {
-      await booksService.create({
-        title,
-        author,
-        year,
-        genre
-      });
-  
-      imported++;
-    } catch (error) {
-      rejected.push({
-        row: i + 1,
-        reason: error.message || 'Validation failed'
-      });
-    }
-  }
     return {
       imported,
       rejectedCount: rejected.length,
@@ -131,30 +125,30 @@ class BooksController {
   
   async getAll(request, reply) {
     const books = await booksService.getAll(request.query);
-    reply.send(books);
+    reply.send(books.map((b) => ({ ...b, image: getFullImageUrl(request, b.image) })));
   }
 
   async getById(request, reply) {
     const book = await booksService.getById(request.params.id);
     if (!book) return reply.notFound(ERROR_MESSAGES.BOOK_NOT_FOUND);
-    reply.send(book);
+    reply.send({ ...book, image: getFullImageUrl(request, book.image) });
   }
 
   async create(request, reply) {
     const book = await booksService.create(request.body);
-    reply.status(201).send(book);
+    reply.status(201).send({ ...book, image: getFullImageUrl(request, book.image) });
   }
 
   async update(request, reply) {
     const book = await booksService.update(request.params.id, request.body);
     if (!book) return reply.notFound(ERROR_MESSAGES.BOOK_NOT_FOUND);
-    reply.send(book);
+    reply.send({ ...book, image: getFullImageUrl(request, book.image) });
   }
 
   async patch(request, reply) {
     const book = await booksService.patch(request.params.id, request.body);
     if (!book) return reply.notFound(ERROR_MESSAGES.BOOK_NOT_FOUND);
-    reply.send(book);
+    reply.send({ ...book, image: getFullImageUrl(request, book.image) });
   }
 
   async delete(request, reply) {

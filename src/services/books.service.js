@@ -1,7 +1,7 @@
-import booksRepository from '../src/repositories/books.repository.js';
+import booksRepository from '../repositories/books.repository.js';
 
 class BooksService {
-  async getAll(query = {}) { 
+  async getAll(query = {}) {
     let books = await booksRepository.getAll();
 
     if (query.author) {
@@ -32,7 +32,7 @@ class BooksService {
       ...data,
       image: data.image ?? null
     };
-  
+
     return booksRepository.create(bookWithImage);
   }
 
@@ -48,14 +48,14 @@ class BooksService {
 
   async delete(id) {
     const book = await this.getById(id);
-    
+
     if (!book) {
-      return false; 
+      return false;
     }
 
     await booksRepository.delete(id);
-    
-    return true; 
+
+    return true;
   }
 }
 
