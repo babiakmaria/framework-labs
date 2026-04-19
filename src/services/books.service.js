@@ -23,6 +23,17 @@ class BooksService {
     return books;
   }
 
+  async getAllPaginated(query = {}) {
+    let books = await this.getAll(query);
+    const total = books.length;
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    const totalPages = Math.ceil(total / limit);
+    const data = books.slice((page - 1) * limit, page * limit);
+
+    return { data, total, page, limit, totalPages };
+  }
+
   async getById(id) {
     return booksRepository.getById(id);
   }

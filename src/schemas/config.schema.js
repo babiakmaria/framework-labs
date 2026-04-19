@@ -5,6 +5,7 @@ export const configSchema = {
     PORT: { type: 'integer', minimum: 1024, maximum: 65535, default: 3000 },
     HOST: { type: 'string', default: '127.0.0.1' },
     NODE_ENV: { enum: ['development', 'production', 'test'], default: 'development' },
-    ADMIN_API_KEY: { type: 'string' }
+    ADMIN_API_KEY: { type: 'string' },
+    GITHUB_TOKEN: { type: 'string' }
   }
 };

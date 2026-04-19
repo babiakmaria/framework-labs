@@ -37,7 +37,7 @@ export const createBookSchema = {
           author: { type: 'string' },
           year: { type: 'integer' },
           genre: { type: 'string' },
-          image: { type: ['string', 'null'] }
+          image: { type: 'string', nullable: true }
         }
       }
     }
@@ -67,7 +67,7 @@ export const getBooksSchema = {
             author: { type: 'string' },
             year: { type: 'integer' },
             genre: { type: 'string' },
-            image: { type: ['string', 'null'] }
+            image: { type: 'string', nullable: true }
           }
         }
       }
@@ -92,7 +92,7 @@ export const updateBookSchema = {
         author: { type: 'string', minLength: 2 },
         year: { type: 'integer', minimum: 1000 },
         genre: { type: 'string', minLength: 3 },
-        image: { type: ['string', 'null'] }
+        image: { type: 'string', nullable: true }
       },
       additionalProperties: false
     },
@@ -106,7 +106,49 @@ export const updateBookSchema = {
           author: { type: 'string' },
           year: { type: 'integer' },
           genre: { type: 'string' },
-          image: { type: ['string', 'null'] }
+          image: { type: 'string', nullable: true }
+        }
+      }
+    }
+  }
+};
+
+export const getBooksPaginatedSchema = {
+  schema: {
+    querystring: {
+      type: 'object',
+      properties: {
+        page: { type: 'integer', minimum: 1, default: 1 },
+        limit: { type: 'integer', minimum: 1, maximum: 100, default: 10 },
+        author: { type: 'string' },
+        year: { type: 'integer' },
+        genre: { type: 'string' }
+      },
+      additionalProperties: false
+    },
+
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          data: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                title: { type: 'string' },
+                author: { type: 'string' },
+                year: { type: 'integer' },
+                genre: { type: 'string' },
+                image: { type: 'string', nullable: true }
+              }
+            }
+          },
+          total: { type: 'integer' },
+          page: { type: 'integer' },
+          limit: { type: 'integer' },
+          totalPages: { type: 'integer' }
         }
       }
     }

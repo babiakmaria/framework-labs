@@ -1,7 +1,7 @@
 import booksController from '../controllers/books.controller.js';
 import {
   createBookSchema,
-  getBooksSchema,
+  getBooksPaginatedSchema,
   updateBookSchema,
   deleteBookSchema
 } from '../schemas/books.schemas.js';
@@ -11,21 +11,11 @@ export default async function (fastify) {
 
   fastify.post('/items/import', booksController.importItems);
 
-fastify.post('/items/:id/image', booksController.uploadImage);
+  fastify.post('/items/:id/image', booksController.uploadImage);
 
-  fastify.get('/items/:id/details', {
-    schema: {
-      params: {
-        type: 'object',
-        required: ['id'],
-        properties: {
-          id: { type: 'string' }
-        }
-      }
-    }
-  }, booksController.getDetails);
+  fastify.get('/items', getBooksPaginatedSchema, booksController.getAllPaginated);
 
-  fastify.get('/books', getBooksSchema, booksController.getAll);
+  fastify.get('/books', getBooksPaginatedSchema, booksController.getAllPaginated);
 
   fastify.get('/books/:id', {
     schema: {
@@ -33,7 +23,7 @@ fastify.post('/items/:id/image', booksController.uploadImage);
         type: 'object',
         required: ['id'],
         properties: {
-          id: { type: 'string' }   
+          id: { type: 'string' }
         }
       }
     }

@@ -1,0 +1,35 @@
+{
+  "books": [
+    {
+      "id": "1",
+      "title": "The Great Gatsby",
+      "author": "F. Scott Fitzgerald",
+      "year": 1925,
+      "genreId": 1,
+      "image": null
+    },
+    {
+      "id": "2",
+      "title": "1984",
+      "author": "George Orwell",
+      "year": 1949,
+      "genreId": 1,
+      "image": null
+    },
+    {
+      "id": "3",
+      "title": "To Kill a Mockingbird",
+      "author": "Harper Lee",
+      "year": 1960,
+      "genreId": 1,
+      "image": null
+    }
+  ],
+  "genres": [
+    {
+      "id": 1,
+      "name": "Fiction",
+      "ageRating": 12
+    }
+  ]
+}

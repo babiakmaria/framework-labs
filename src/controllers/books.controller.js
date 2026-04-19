@@ -3,6 +3,7 @@ import booksService from '../services/books.service.js';
 import { ERROR_MESSAGES } from '../constants/messages.js';
 import { getFullImageUrl } from '../utils/getFullUrl.js';
 import { createBookSchema } from '../schemas/books.schemas.js';
+import { fetchExternalGenre } from '../utils/fetch.js';
 import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
 import path from 'path';
@@ -12,7 +13,7 @@ const ajv = new Ajv();
 const validateBook = ajv.compile(createBookSchema.schema.body);
 
 class BooksController {
-  async exportItems(request, reply) {
+  async exportItems(_request, reply) {
     const items = await booksService.getAll();
     const csv = stringify(items, { header: true });
 
@@ -123,6 +124,25 @@ class BooksController {
     };
   }
   
+  async getAllPaginated(request, reply) {
+    const result = await booksService.getAllPaginated(request.query);
+    result.data = result.data.map((b) => ({ ...b, image: getFullImageUrl(request, b.image) }));
+    reply.send(result);
+  }
+
+  async getDetails(request, reply) {
+    const book = await booksService.getById(request.params.id);
+    if (!book) return reply.notFound(ERROR_MESSAGES.BOOK_NOT_FOUND);
+
+    const genre = await fetchExternalGenre(book.genreId);
+
+    return reply.send({
+      ...book,
+      image: getFullImageUrl(request, book.image),
+      genre: genre ?? null
+    });
+  }
+
   async getAll(request, reply) {
     const books = await booksService.getAll(request.query);
     reply.send(books.map((b) => ({ ...b, image: getFullImageUrl(request, b.image) })));
@@ -154,7 +174,7 @@ class BooksController {
   async delete(request, reply) {
     const success = await booksService.delete(request.params.id);
     if (!success) return reply.notFound(ERROR_MESSAGES.BOOK_NOT_FOUND);
-    reply.send({ message: 'Deleted successfully' });
+    reply.code(204).send();
   }
 }
 

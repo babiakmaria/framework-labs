@@ -1,6 +1,9 @@
 import Fastify from 'fastify';
 import path from 'path';
 import registerRoutes from './routes/books.routes.js';
+import registerRoutesV2 from './routes/books.routes.v2.js';
+import registerGithubRoutes from './routes/github.routes.js';
+import registerGithubRoutesV2 from './routes/github.routes.v2.js';
 import envPlugin from './config/env.js';
 import multipart from '@fastify/multipart';
 import { createBackup, checkSchemaVersion } from './utils/startup.js';
@@ -31,7 +34,35 @@ await fastify.register(import('@fastify/cors'), {
 });
 
 await fastify.register(import('@fastify/helmet'), {
-  global: true
+  global: true,
+  contentSecurityPolicy: false
+});
+
+await fastify.register(import('@fastify/swagger'), {
+  openapi: {
+    info: {
+      title: 'Books API',
+      version: '2.0.0'
+    },
+    servers: [
+      { url: 'http://localhost:3000' }
+    ]
+  }
+});
+
+await fastify.register(import('@fastify/swagger-ui'), {
+  routePrefix: '/docs'
+});
+
+await fastify.register(import('@fastify/rate-limit'), {
+  global: true,
+  max: 100,
+  timeWindow: '1 minute',
+  errorResponseBuilder: () => ({
+    statusCode: 429,
+    error: 'Too Many Requests',
+    message: 'Rate limit exceeded. Try again in 1 minute.'
+  })
 });
 
 await fastify.register(import('@fastify/static'), {
@@ -39,7 +70,10 @@ await fastify.register(import('@fastify/static'), {
   prefix: '/uploads/'
 });
 
-await fastify.register(registerRoutes);
+await fastify.register(registerRoutes, { prefix: '/api/v1' });
+await fastify.register(registerRoutesV2, { prefix: '/api/v2' });
+await fastify.register(registerGithubRoutes, { prefix: '/api/v1' });
+await fastify.register(registerGithubRoutesV2, { prefix: '/api/v2' });
 
 fastify.addHook('onClose', async (instance, done) => {
   fastify.log.info('Fastify server is closing...');
@@ -68,6 +102,14 @@ fastify.get('/health/details', {
 
 fastify.setErrorHandler((error, request, reply) => {
   fastify.log.error(error);
+
+  if (error.statusCode === 429) {
+    return reply.status(429).send({
+      statusCode: 429,
+      error: 'Too Many Requests',
+      message: error.message
+    });
+  }
 
   if (error.validation) {
     return reply.status(400).send({
