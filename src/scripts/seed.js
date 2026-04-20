@@ -2,7 +2,7 @@ const path = require("path");
 const fs = require("fs/promises");
 const atomicWrite = require("../utils/atomicWrite");
 const ItemModel = require("../models/item.model");
-const { v4: uuidv4 } = require("uuid");
+const { randomUUID } = require("crypto");
 
 const data = [
   { title: "Harry Potter", author: "J.K. Rowling", genre: "Fantasy" },
@@ -13,7 +13,7 @@ async function seed() {
   const folder = path.join(__dirname, "../../data/items");
 
   for (const item of data) {
-    const id = uuidv4();
+    const id = randomUUID();
 
     const newItem = {
       ...ItemModel,

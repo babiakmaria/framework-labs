@@ -1,5 +1,5 @@
 import path from "path";
-import { v4 as uuidv4 } from "uuid";
+import crypto from "crypto";
 
 import {
   getAllFiles,
@@ -30,7 +30,7 @@ class BooksRepository {
   }
 
   async create(data) {
-    const id = uuidv4();
+    const id = crypto.randomUUID();
 
     const newBook = {
       ...ItemModel,

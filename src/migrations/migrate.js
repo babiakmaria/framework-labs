@@ -6,7 +6,6 @@ import { fileURLToPath } from "url";
 import ItemModel from "../models/item.model.js";
 import { atomicWrite, itemsPath } from "../utils/file.utils.js";
 import { BOOKS } from "../../data/books.data.js";
-import { v4 as uuidv4 } from "uuid";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,7 +22,11 @@ async function migrate() {
   try {
     const version = JSON.parse(await fs.readFile(versionFile, "utf-8"));
     oldHash = version.hash;
-  } catch {}
+  } catch (err) {
+    if (err.code !== "ENOENT") {
+      console.error("Failed to read version file:", err);
+    }
+  }
 
   if (oldHash === modelHash) {
     console.log("Migration not needed");
@@ -39,7 +42,7 @@ async function migrate() {
   if (files.length === 0) {
     console.log("No files found. Seeding from books.data.js...");
     for (const book of BOOKS) {
-      const id = uuidv4();
+      const id = crypto.randomUUID();
       const newBook = { ...ItemModel, ...book, id };
       await atomicWrite(path.join(itemsPath, `${id}.json`), newBook);
     }

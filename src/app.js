@@ -4,6 +4,7 @@ import registerRoutes from './routes/books.routes.js';
 import registerRoutesV2 from './routes/books.routes.v2.js';
 import registerGithubRoutes from './routes/github.routes.js';
 import registerGithubRoutesV2 from './routes/github.routes.v2.js';
+import registerHealthRoutes from './routes/health.routes.js';
 import envPlugin from './config/env.js';
 import multipart from '@fastify/multipart';
 import { createBackup, checkSchemaVersion } from './utils/startup.js';
@@ -74,30 +75,11 @@ await fastify.register(registerRoutes, { prefix: '/api/v1' });
 await fastify.register(registerRoutesV2, { prefix: '/api/v2' });
 await fastify.register(registerGithubRoutes, { prefix: '/api/v1' });
 await fastify.register(registerGithubRoutesV2, { prefix: '/api/v2' });
+await fastify.register(registerHealthRoutes);
 
 fastify.addHook('onClose', async (instance, done) => {
   fastify.log.info('Fastify server is closing...');
   done();
-});
-
-fastify.get('/health', async () => {
-  return { status: 'ok' };
-});
-
-fastify.get('/health/details', {
-  onRequest: async (req, reply) => {
-    if (req.headers['x-api-key'] !== fastify.config.ADMIN_API_KEY) {
-      return reply.code(401).send({ message: 'Unauthorized' });
-    }
-  }
-}, async () => {
-  return {
-    pid: process.pid,
-    nodeVersion: process.version,
-    platform: process.platform,
-    uptime: process.uptime(),
-    memoryUsage: process.memoryUsage()
-  };
 });
 
 fastify.setErrorHandler((error, request, reply) => {
