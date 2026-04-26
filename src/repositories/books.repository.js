@@ -1,5 +1,6 @@
 import path from "path";
 import crypto from "crypto";
+import { Readable } from "stream";
 
 import {
   getAllFiles,
@@ -62,6 +63,17 @@ class BooksRepository {
 
   async delete(id) {
     await deleteFile(id);
+  }
+
+  createStream() {
+    async function* generator() {
+      const files = await getAllFiles();
+      for (const file of files) {
+        const id = file.replace('.json', '');
+        yield await readFile(id);
+      }
+    }
+    return Readable.from(generator());
   }
 }
 

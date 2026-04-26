@@ -5,6 +5,8 @@ import registerRoutesV2 from './routes/books.routes.v2.js';
 import registerGithubRoutes from './routes/github.routes.js';
 import registerGithubRoutesV2 from './routes/github.routes.v2.js';
 import registerHealthRoutes from './routes/health.routes.js';
+import registerBooksWsRoutes from './routes/books.ws.routes.js';
+import registerBackupsRoutes from './routes/backups.routes.js';
 import envPlugin from './config/env.js';
 import multipart from '@fastify/multipart';
 import { createBackup, checkSchemaVersion } from './utils/startup.js';
@@ -24,6 +26,7 @@ const fastify = Fastify({
 });
 
 await fastify.register(envPlugin);
+await fastify.register(import('@fastify/websocket'));
 await fastify.register(multipart);
 await fastify.register(import('@fastify/sensible'));
 await fastify.register(import('@fastify/cors'), {
@@ -71,7 +74,9 @@ await fastify.register(import('@fastify/static'), {
   prefix: '/uploads/'
 });
 
+await fastify.register(registerBooksWsRoutes);
 await fastify.register(registerRoutes, { prefix: '/api/v1' });
+await fastify.register(registerBackupsRoutes, { prefix: '/api/v1' });
 await fastify.register(registerRoutesV2, { prefix: '/api/v2' });
 await fastify.register(registerGithubRoutes, { prefix: '/api/v1' });
 await fastify.register(registerGithubRoutesV2, { prefix: '/api/v2' });

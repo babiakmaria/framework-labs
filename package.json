@@ -30,7 +30,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed": "node src/scripts/seed.js",
     "migrate": "node src/migrations/migrate.js",
-    "external": "json-server db.json --port 3001" 
+    "external": "json-server db.json --port 3001"
   },
   "repository": {
     "type": "git",
@@ -62,6 +62,7 @@
     "@fastify/static": "^9.0.0",
     "@fastify/swagger": "^9.7.0",
     "@fastify/swagger-ui": "^5.2.5",
+    "@fastify/websocket": "^11.2.0",
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
     "csv-parse": "^6.2.1",

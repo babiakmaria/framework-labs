@@ -7,7 +7,18 @@ import {
 } from '../schemas/books.schemas.js';
 
 export default async function (fastify) {
-  fastify.get('/items/export', booksController.exportItems);
+  fastify.get('/items/export', {
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          transform: { type: 'string', enum: ['true', 'false'] }
+        }
+      }
+    }
+  }, booksController.exportItems);
+
+  fastify.get('/items/stream', booksController.streamItems);
 
   fastify.post('/items/import', booksController.importItems);
 

@@ -1,11 +1,17 @@
 import Ajv from 'ajv';
 import booksService from '../services/books.service.js';
+import booksRepository from '../repositories/books.repository.js';
 import { ERROR_MESSAGES } from '../constants/messages.js';
 import { getFullImageUrl } from '../utils/getFullUrl.js';
 import { createBookSchema } from '../schemas/books.schemas.js';
 import { fetchExternalGenre } from '../utils/fetch.js';
 import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
+import { stringify as stringifyStream } from 'csv-stringify';
+import { BookAgeTransform } from '../transforms/books.transform.js';
+import { NdjsonTransform } from '../transforms/ndjson.transform.js';
+import { pipeline } from 'stream/promises';
+import { booksEmitter } from '../events/books.emitter.js';
 import path from 'path';
 import fs from 'fs/promises';
 
@@ -13,13 +19,33 @@ const ajv = new Ajv();
 const validateBook = ajv.compile(createBookSchema.schema.body);
 
 class BooksController {
-  async exportItems(_request, reply) {
-    const items = await booksService.getAll();
-    const csv = stringify(items, { header: true });
+  async exportItems(request, reply) {
+    const shouldTransform = request.query.transform === 'true';
 
-    reply.header("Content-Disposition", 'attachment; filename="items.csv"');
-    reply.type("text/csv");
-    return csv;
+    reply.raw.writeHead(200, {
+      'Content-Disposition': 'attachment; filename="items.csv"',
+      'Content-Type': 'text/csv'
+    });
+
+    const csvStream = stringifyStream({ header: true });
+    const booksStream = booksRepository.createStream();
+
+    if (shouldTransform) {
+      await pipeline(booksStream, new BookAgeTransform(), csvStream, reply.raw);
+    } else {
+      await pipeline(booksStream, csvStream, reply.raw);
+    }
+  }
+
+  async streamItems(_request, reply) {
+    const booksStream = booksRepository.createStream();
+    const ndjsonTransform = new NdjsonTransform();
+
+    booksStream.on('error', (err) => ndjsonTransform.destroy(err));
+    booksStream.pipe(ndjsonTransform);
+
+    reply.type('application/x-ndjson');
+    return reply.send(ndjsonTransform);
   }
 
   async importItems(request, reply) {
@@ -156,24 +182,28 @@ class BooksController {
 
   async create(request, reply) {
     const book = await booksService.create(request.body);
+    booksEmitter.emit('books:created', book);
     reply.status(201).send({ ...book, image: getFullImageUrl(request, book.image) });
   }
 
   async update(request, reply) {
     const book = await booksService.update(request.params.id, request.body);
     if (!book) return reply.notFound(ERROR_MESSAGES.BOOK_NOT_FOUND);
+    booksEmitter.emit('books:updated', book);
     reply.send({ ...book, image: getFullImageUrl(request, book.image) });
   }
 
   async patch(request, reply) {
     const book = await booksService.patch(request.params.id, request.body);
     if (!book) return reply.notFound(ERROR_MESSAGES.BOOK_NOT_FOUND);
+    booksEmitter.emit('books:updated', book);
     reply.send({ ...book, image: getFullImageUrl(request, book.image) });
   }
 
   async delete(request, reply) {
     const success = await booksService.delete(request.params.id);
     if (!success) return reply.notFound(ERROR_MESSAGES.BOOK_NOT_FOUND);
+    booksEmitter.emit('books:deleted', request.params.id);
     reply.code(204).send();
   }
 }
