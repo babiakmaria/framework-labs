@@ -58,7 +58,9 @@ export async function fetchExternalGenre(genreId) {
     return entry.data;
   }
 
-  const data = await fetchWithRetry(`http://localhost:3001/genres/${genreId}`);
+  // eslint-disable-next-line no-process-env
+  const baseUrl = `http://${process.env.HOST}:${process.env.GENRES_API_PORT ?? 3001}`;
+  const data = await fetchWithRetry(`${baseUrl}/genres/${genreId}`);
 
   if (data) {
     cache[key] = { cachedAt: Date.now(), data };

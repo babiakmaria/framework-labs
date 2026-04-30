@@ -25,6 +25,32 @@ class BooksRepository {
     return books;
   }
 
+  async getPaginated({ page = 1, limit = 10, author, year, genre } = {}) {
+    const files = await getAllFiles();
+    const start = (page - 1) * limit;
+    const end = start + limit;
+
+    let matched = 0;
+    const data = [];
+
+    for (const file of files) {
+      const id = file.replace(".json", "");
+      const book = await readFile(id);
+
+      if (author && !book.author?.toLowerCase().includes(author.toLowerCase())) continue;
+      if (year && Number(book.year) !== Number(year)) continue;
+      if (genre && !book.genre?.toLowerCase().includes(genre.toLowerCase())) continue;
+
+      if (matched >= start && matched < end) {
+        data.push(book);
+      }
+      matched++;
+    }
+
+    const totalPages = Math.ceil(matched / limit);
+    return { data, total: matched, page, limit, totalPages };
+  }
+
   async getById(id) {
     return await readFile(id);
   }
