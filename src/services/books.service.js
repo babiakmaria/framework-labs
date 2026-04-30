@@ -24,14 +24,9 @@ class BooksService {
   }
 
   async getAllPaginated(query = {}) {
-    let books = await this.getAll(query);
-    const total = books.length;
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
-    const totalPages = Math.ceil(total / limit);
-    const data = books.slice((page - 1) * limit, page * limit);
-
-    return { data, total, page, limit, totalPages };
+    const page = Number(query.page ?? 1);
+    const limit = Number(query.limit ?? 10);
+    return booksRepository.getPaginated({ ...query, page, limit });
   }
 
   async getById(id) {

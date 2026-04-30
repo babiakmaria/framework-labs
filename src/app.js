@@ -49,7 +49,7 @@ await fastify.register(import('@fastify/swagger'), {
       version: '2.0.0'
     },
     servers: [
-      { url: 'http://localhost:3000' }
+      { url: `http://${fastify.config.HOST}:${fastify.config.PORT}` }
     ]
   }
 });
