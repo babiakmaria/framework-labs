@@ -1,4 +1,6 @@
 import { Readable } from 'stream';
+import { eq, like, and, count } from 'drizzle-orm';
+import { books } from '../db/schema.js';
 
 function mapRow(row) {
   return {
@@ -8,8 +10,7 @@ function mapRow(row) {
     year: row.year,
     genre: row.genre,
     image: row.image,
-    createdAt:
-      row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at
+    createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : row.createdAt
   };
 }
 
@@ -19,39 +20,29 @@ export class BooksRepository {
   }
 
   async getAll() {
-    const [rows] = await this.db.query('SELECT * FROM books ORDER BY id ASC');
+    const rows = await this.db.select().from(books).orderBy(books.id);
     return rows.map(mapRow);
   }
 
   async getPaginated({ page = 1, limit = 10, author, year, genre } = {}) {
     const conditions = [];
-    const params = [];
 
-    if (author) {
-      conditions.push('author LIKE ?');
-      params.push(`%${author}%`);
-    }
-    if (year) {
-      conditions.push('year = ?');
-      params.push(Number(year));
-    }
-    if (genre) {
-      conditions.push('genre LIKE ?');
-      params.push(`%${genre}%`);
-    }
+    if (author) conditions.push(like(books.author, `%${author}%`));
+    if (year) conditions.push(eq(books.year, Number(year)));
+    if (genre) conditions.push(like(books.genre, `%${genre}%`));
 
-    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const where = conditions.length ? and(...conditions) : undefined;
     const offset = (Number(page) - 1) * Number(limit);
 
-    const [[{ total }]] = await this.db.query(
-      `SELECT COUNT(*) as total FROM books ${where}`,
-      params
-    );
+    const [{ total }] = await this.db.select({ total: count() }).from(books).where(where);
 
-    const [rows] = await this.db.query(
-      `SELECT * FROM books ${where} ORDER BY id ASC LIMIT ? OFFSET ?`,
-      [...params, Number(limit), offset]
-    );
+    const rows = await this.db
+      .select()
+      .from(books)
+      .where(where)
+      .orderBy(books.id)
+      .limit(Number(limit))
+      .offset(offset);
 
     return {
       data: rows.map(mapRow),
@@ -63,38 +54,35 @@ export class BooksRepository {
   }
 
   async getById(id) {
-    const [rows] = await this.db.query('SELECT * FROM books WHERE id = ?', [parseInt(id)]);
+    const rows = await this.db.select().from(books).where(eq(books.id, parseInt(id)));
     return rows[0] ? mapRow(rows[0]) : null;
   }
 
   async create(data) {
     const { title, author, year, genre = null, image = null } = data;
-    const [result] = await this.db.query(
-      'INSERT INTO books (title, author, year, genre, image) VALUES (?, ?, ?, ?, ?)',
-      [title, author, year, genre, image]
-    );
-    return this.getById(result.insertId);
+    const result = await this.db.insert(books).values({ title, author, year, genre, image });
+    return this.getById(result[0].insertId);
   }
 
   async update(id, data) {
     const existing = await this.getById(id);
     if (!existing) return null;
     const { title, author, year, genre, image } = { ...existing, ...data };
-    await this.db.query(
-      'UPDATE books SET title = ?, author = ?, year = ?, genre = ?, image = ? WHERE id = ?',
-      [title, author, year, genre ?? null, image ?? null, parseInt(id)]
-    );
+    await this.db
+      .update(books)
+      .set({ title, author, year, genre: genre ?? null, image: image ?? null })
+      .where(eq(books.id, parseInt(id)));
     return this.getById(id);
   }
 
   async delete(id) {
-    await this.db.query('DELETE FROM books WHERE id = ?', [parseInt(id)]);
+    await this.db.delete(books).where(eq(books.id, parseInt(id)));
   }
 
   createStream() {
     const db = this.db;
     async function* gen() {
-      const [rows] = await db.query('SELECT * FROM books ORDER BY id ASC');
+      const rows = await db.select().from(books).orderBy(books.id);
       for (const row of rows) yield mapRow(row);
     }
     return Readable.from(gen());

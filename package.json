@@ -30,7 +30,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed": "node src/scripts/seed.js",
     "seed:force": "node src/scripts/seed.js --force",
-    "migrate": "node src/migrations/migrate.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
     "external": "json-server db.json --port 3001"
   },
   "repository": {
@@ -46,6 +47,7 @@
   },
   "homepage": "https://github.com/babiakmaria/framework-labs#readme",
   "devDependencies": {
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
@@ -69,6 +71,7 @@
     "csv-parse": "^6.2.1",
     "csv-stringify": "^6.7.0",
     "dotenv": "^17.3.1",
+    "drizzle-orm": "^0.45.2",
     "fastify": "^5.8.2",
     "fastify-plugin": "^5.1.0",
     "mysql2": "^3.22.3"

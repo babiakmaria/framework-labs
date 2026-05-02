@@ -9,8 +9,9 @@ import registerBooksWsRoutes from './routes/books.ws.routes.js';
 import registerBackupsRoutes from './routes/backups.routes.js';
 import envPlugin from './config/env.js';
 import mysqlPlugin from './db/mysql.js';
+import drizzlePlugin from './db/drizzle.js';
 import multipart from '@fastify/multipart';
-import { createBackup, checkSchemaVersion } from './utils/startup.js';
+import { createBackup } from './utils/startup.js';
 import { initRepository } from './repositories/books.repository.js';
 
 const fastify = Fastify({
@@ -29,6 +30,7 @@ const fastify = Fastify({
 
 await fastify.register(envPlugin);
 await fastify.register(mysqlPlugin);
+await fastify.register(drizzlePlugin);
 
 initRepository(fastify.db);
 
@@ -156,7 +158,6 @@ const start = async () => {
 
 try {
   await createBackup(fastify.db);
-  await checkSchemaVersion(fastify);
   start();
 } catch (error) {
   console.error("FATAL STARTUP ERROR:", error);
