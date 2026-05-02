@@ -8,8 +8,10 @@ import registerHealthRoutes from './routes/health.routes.js';
 import registerBooksWsRoutes from './routes/books.ws.routes.js';
 import registerBackupsRoutes from './routes/backups.routes.js';
 import envPlugin from './config/env.js';
+import mysqlPlugin from './db/mysql.js';
 import multipart from '@fastify/multipart';
 import { createBackup, checkSchemaVersion } from './utils/startup.js';
+import { initRepository } from './repositories/books.repository.js';
 
 const fastify = Fastify({
   // eslint-disable-next-line no-process-env
@@ -26,6 +28,10 @@ const fastify = Fastify({
 });
 
 await fastify.register(envPlugin);
+await fastify.register(mysqlPlugin);
+
+initRepository(fastify.db);
+
 await fastify.register(import('@fastify/websocket'));
 await fastify.register(multipart);
 await fastify.register(import('@fastify/sensible'));
@@ -149,8 +155,8 @@ const start = async () => {
 };
 
 try {
-  await createBackup();
-  await checkSchemaVersion(fastify.log);
+  await createBackup(fastify.db);
+  await checkSchemaVersion(fastify);
   start();
 } catch (error) {
   console.error("FATAL STARTUP ERROR:", error);

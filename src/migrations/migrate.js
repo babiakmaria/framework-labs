@@ -1,64 +1,33 @@
-import fs from "fs/promises";
-import path from "path";
-import crypto from "crypto";
-import { fileURLToPath } from "url";
+import mysql from 'mysql2/promise';
+import fs from 'fs/promises';
+import crypto from 'crypto';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
 
-import ItemModel from "../models/item.model.js";
-import { atomicWrite, itemsPath } from "../utils/file.utils.js";
-import { BOOKS } from "../../data/books.data.js";
+dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const schemaPath = path.join(__dirname, '../db/schema.sql');
 
-async function migrate() {
-  const versionFile = path.join(__dirname, "../data/version.json");
+const connection = await mysql.createConnection({
+  host: process.env.MYSQL_HOST,
+  port: Number(process.env.MYSQL_PORT) || 3306,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DB,
+  multipleStatements: true
+});
 
-  const modelHash = crypto
-    .createHash("md5")
-    .update(JSON.stringify(ItemModel))
-    .digest("hex");
+const schema = await fs.readFile(schemaPath, 'utf-8');
+const hash = crypto.createHash('md5').update(schema).digest('hex');
 
-  let oldHash = null;
-  try {
-    const version = JSON.parse(await fs.readFile(versionFile, "utf-8"));
-    oldHash = version.hash;
-  } catch (err) {
-    if (err.code !== "ENOENT") {
-      console.error("Failed to read version file:", err);
-    }
-  }
+await connection.query(schema);
 
-  if (oldHash === modelHash) {
-    console.log("Migration not needed");
-    const existingFiles = await fs.readdir(itemsPath).catch(() => []);
-    if (existingFiles.length > 0) return; 
-    console.log("Items folder is empty, proceeding with initial seed...");
-  }
+await connection.query('INSERT INTO migrations (hash, applied_at) VALUES (?, ?)', [
+  hash,
+  new Date()
+]);
 
-  await fs.mkdir(itemsPath, { recursive: true });
-
-  const files = await fs.readdir(itemsPath);
-
-  if (files.length === 0) {
-    console.log("No files found. Seeding from books.data.js...");
-    for (const book of BOOKS) {
-      const id = crypto.randomUUID();
-      const newBook = { ...ItemModel, ...book, id };
-      await atomicWrite(path.join(itemsPath, `${id}.json`), newBook);
-    }
-  } else {
-    for (const file of files) {
-      const filePath = path.join(itemsPath, file);
-      const item = JSON.parse(await fs.readFile(filePath, "utf-8"));
-      const updated = { ...ItemModel, ...item };
-      await atomicWrite(filePath, updated);
-    }
-  }
-  const versionDir = path.dirname(versionFile);
-  await fs.mkdir(versionDir, { recursive: true });
-
-  await fs.writeFile(versionFile, JSON.stringify({ hash: modelHash }, null, 2));
-  console.log("Migration/Seeding completed!");
-}
-
-migrate().catch(console.error);
+console.log(`Migration complete. Schema hash: ${hash}`);
+await connection.end();
