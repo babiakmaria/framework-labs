@@ -1,106 +1,114 @@
-import path from "path";
-import crypto from "crypto";
-import { Readable } from "stream";
+import { Readable } from 'stream';
+import '../../db/models/book.model.js';
 
-import {
-  getAllFiles,
-  readFile,
-  deleteFile,
-  atomicWrite,
-  itemsPath
-} from "../utils/file.utils.js";
+function mapId({ _id, ...rest }) {
+  return { id: _id.toString(), ...rest };
+}
 
-import ItemModel from "../models/item.model.js";
+function buildFilter({ author, year, genre } = {}) {
+  const filter = {};
+  if (author) filter.author = { $regex: author, $options: 'i' };
+  if (year) filter.year = Number(year);
+  if (genre) filter.genre = { $regex: genre, $options: 'i' };
+  return filter;
+}
 
 class BooksRepository {
+  #db;
+
+  constructor(db) {
+    this.#db = db;
+  }
+
+  get #Book() {
+    return this.#db.model('Book');
+  }
+
   async getAll() {
-    const files = await getAllFiles();
-    const books = [];
-
-    for (const file of files) {
-      const id = file.replace(".json", "");
-      const book = await readFile(id);
-      books.push(book);
-    }
-
-    return books;
+    const books = await this.#Book.find().lean();
+    return books.map(mapId);
   }
 
   async getPaginated({ page = 1, limit = 10, author, year, genre } = {}) {
-    const files = await getAllFiles();
-    const start = (page - 1) * limit;
-    const end = start + limit;
+    const filter = buildFilter({ author, year, genre });
+    const skip = (page - 1) * limit;
 
-    let matched = 0;
-    const data = [];
+    const [data, total] = await Promise.all([
+      this.#Book.find(filter).skip(skip).limit(limit).lean(),
+      this.#Book.countDocuments(filter)
+    ]);
 
-    for (const file of files) {
-      const id = file.replace(".json", "");
-      const book = await readFile(id);
-
-      if (author && !book.author?.toLowerCase().includes(author.toLowerCase())) continue;
-      if (year && Number(book.year) !== Number(year)) continue;
-      if (genre && !book.genre?.toLowerCase().includes(genre.toLowerCase())) continue;
-
-      if (matched >= start && matched < end) {
-        data.push(book);
-      }
-      matched++;
-    }
-
-    const totalPages = Math.ceil(matched / limit);
-    return { data, total: matched, page, limit, totalPages };
+    return {
+      data: data.map(mapId),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    };
   }
 
   async getById(id) {
-    return await readFile(id);
+    try {
+      const book = await this.#Book.findById(id).lean();
+      return book ? mapId(book) : null;
+    } catch {
+      return null;
+    }
   }
 
   async create(data) {
-    const id = crypto.randomUUID();
-
-    const newBook = {
-      ...ItemModel,
-      ...data,
-      id
-    };
-
-    const filePath = path.join(itemsPath, `${id}.json`);
-    await atomicWrite(filePath, newBook);
-
-    return newBook;
+    const book = await this.#Book.create(data);
+    return book.toJSON();
   }
 
   async update(id, data) {
-    const book = await readFile(id);
-
-    if (!book) return null;
-
-    const updatedBook = {
-      ...book,
-      ...data
-    };
-
-    const filePath = path.join(itemsPath, `${id}.json`);
-    await atomicWrite(filePath, updatedBook);
-
-    return updatedBook;
+    try {
+      const { id: _, ...rest } = data;
+      const book = await this.#Book.findByIdAndUpdate(id, rest, {
+        returnDocument: 'after',
+        runValidators: true
+      }).lean();
+      return book ? mapId(book) : null;
+    } catch {
+      return null;
+    }
   }
 
   async delete(id) {
-    await deleteFile(id);
+    try {
+      await this.#Book.findByIdAndDelete(id);
+    } catch {
+      return;
+    }
   }
 
   createStream() {
-    async function* generator() {
-      const files = await getAllFiles();
-      for (const file of files) {
-        const id = file.replace('.json', '');
-        yield await readFile(id);
-      }
-    }
-    return Readable.from(generator());
+    const cursor = this.#Book.find().lean().cursor();
+    return Readable.from(
+      (async function* () {
+        for await (const doc of cursor) {
+          yield mapId(doc);
+        }
+      })()
+    );
   }
 }
 
-export default new BooksRepository();
+export const createBooksRepository = (db) => new BooksRepository(db);
+
+let _instance = null;
+
+export const initBooksRepository = (db) => {
+  _instance = createBooksRepository(db);
+};
+
+export default new Proxy(
+  {},
+  {
+    get(_, prop) {
+      if (!_instance) throw new Error('BooksRepository is not initialized. Call initBooksRepository(fastify.db) first.');
+      const val = _instance[prop];
+      return typeof val === 'function' ? val.bind(_instance) : val;
+    }
+  }
+);

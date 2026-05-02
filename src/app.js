@@ -8,6 +8,8 @@ import registerHealthRoutes from './routes/health.routes.js';
 import registerBooksWsRoutes from './routes/books.ws.routes.js';
 import registerBackupsRoutes from './routes/backups.routes.js';
 import envPlugin from './config/env.js';
+import mongoPlugin from '../db/mongo.js';
+import { initBooksRepository } from './repositories/books.repository.js';
 import multipart from '@fastify/multipart';
 import { createBackup, checkSchemaVersion } from './utils/startup.js';
 
@@ -26,6 +28,8 @@ const fastify = Fastify({
 });
 
 await fastify.register(envPlugin);
+await fastify.register(mongoPlugin);
+initBooksRepository(fastify.db);
 await fastify.register(import('@fastify/websocket'));
 await fastify.register(multipart);
 await fastify.register(import('@fastify/sensible'));

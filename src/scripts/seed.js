@@ -1,31 +1,38 @@
-const path = require("path");
-const fs = require("fs/promises");
-const atomicWrite = require("../utils/atomicWrite");
-const ItemModel = require("../models/item.model");
-const { randomUUID } = require("crypto");
+import 'dotenv/config';
+import mongoose from 'mongoose';
+import { Book } from '../../db/models/book.model.js';
 
-const data = [
-  { title: "Harry Potter", author: "J.K. Rowling", genre: "Fantasy" },
-  { title: "Demon Copperhead", author: "B. Kingsolver", genre: "Fiction" }
+// eslint-disable-next-line no-process-env
+const { MONGO_URL, MONGO_DB_NAME } = process.env;
+
+const SEED_DATA = [
+  { title: 'Harry Potter', author: 'J.K. Rowling', year: 1997, genre: 'Fantasy' },
+  { title: 'Demon Copperhead', author: 'B. Kingsolver', year: 2022, genre: 'Fiction' }
 ];
 
+const force = process.argv.includes('--force');
+
 async function seed() {
-  const folder = path.join(__dirname, "../../data/items");
+  await mongoose.connect(MONGO_URL, { dbName: MONGO_DB_NAME });
 
-  for (const item of data) {
-    const id = randomUUID();
-
-    const newItem = {
-      ...ItemModel,
-      ...item,
-      id
-    };
-
-    const filePath = path.join(folder, `${id}.json`);
-    await atomicWrite(filePath, newItem);
+  if (force) {
+    await Book.deleteMany({});
+    console.log('Collection cleared.');
+  } else {
+    const count = await Book.countDocuments();
+    if (count > 0) {
+      console.log(`DB is not empty (${count} books). Skipping seed. Use --force to reseed.`);
+      await mongoose.disconnect();
+      return;
+    }
   }
 
-  console.log("Seed finished!");
+  await Book.insertMany(SEED_DATA);
+  console.log(`Seeded ${SEED_DATA.length} books.`);
+  await mongoose.disconnect();
 }
 
-seed();
+seed().catch((err) => {
+  console.error('Seed failed:', err);
+  process.exit(1);
+});
