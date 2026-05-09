@@ -12,6 +12,7 @@ export default async function (fastify) {
   const booksService = createBooksService(fastify.redis);
   const fetchGenre = createGenreFetcher(fastify.redis);
   const ctrl = createBooksController(booksService, fetchGenre);
+  const auth = { onRequest: [fastify.authenticate], schema: { security: [{ bearerAuth: [] }] } };
 
   fastify.get(
     '/items/export',
@@ -30,9 +31,9 @@ export default async function (fastify) {
 
   fastify.get('/items/stream', ctrl.streamItems);
 
-  fastify.post('/items/import', ctrl.importItems);
+  fastify.post('/items/import', { onRequest: auth.onRequest, schema: auth.schema }, ctrl.importItems);
 
-  fastify.post('/items/:id/image', ctrl.uploadImage);
+  fastify.post('/items/:id/image', { onRequest: auth.onRequest, schema: auth.schema }, ctrl.uploadImage);
 
   fastify.get(
     '/items/:id/details',
@@ -68,14 +69,16 @@ export default async function (fastify) {
     ctrl.getById
   );
 
-  fastify.post('/books', createBookSchema, ctrl.create);
+  fastify.post('/books', { ...createBookSchema, onRequest: auth.onRequest, schema: { ...createBookSchema.schema, security: [{ bearerAuth: [] }] } }, ctrl.create);
 
   fastify.put(
     '/books/:id',
     {
       ...updateBookSchema,
+      onRequest: auth.onRequest,
       schema: {
         ...updateBookSchema.schema,
+        security: [{ bearerAuth: [] }],
         params: {
           type: 'object',
           required: ['id'],
@@ -92,8 +95,10 @@ export default async function (fastify) {
     '/books/:id',
     {
       ...updateBookSchema,
+      onRequest: auth.onRequest,
       schema: {
         ...updateBookSchema.schema,
+        security: [{ bearerAuth: [] }],
         params: {
           type: 'object',
           required: ['id'],
@@ -110,8 +115,10 @@ export default async function (fastify) {
     '/books/:id',
     {
       ...deleteBookSchema,
+      onRequest: auth.onRequest,
       schema: {
         ...deleteBookSchema.schema,
+        security: [{ bearerAuth: [] }],
         params: {
           type: 'object',
           required: ['id'],

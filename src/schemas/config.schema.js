@@ -1,6 +1,6 @@
 export const configSchema = {
   type: 'object',
-  required: ['PORT', 'HOST', 'MYSQL_HOST', 'MYSQL_USER', 'MYSQL_DB'],
+  required: ['PORT', 'HOST', 'MYSQL_HOST', 'MYSQL_USER', 'MYSQL_DB', 'JWT_SECRET'],
   properties: {
     PORT: { type: 'integer', minimum: 1024, maximum: 65535, default: 3000 },
     HOST: { type: 'string', default: '127.0.0.1' },
@@ -18,5 +18,6 @@ export const configSchema = {
     MYSQL_DB: { type: 'string' },
     REDIS_HOST: { type: 'string', default: '127.0.0.1' },
     REDIS_PORT: { type: 'integer', default: 6379 },
+    JWT_SECRET: { type: 'string', minLength: 32 },
   },
 };

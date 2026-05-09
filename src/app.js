@@ -7,10 +7,12 @@ import registerGithubRoutesV2 from './routes/github.routes.v2.js';
 import registerHealthRoutes from './routes/health.routes.js';
 import registerBooksWsRoutes from './routes/books.ws.routes.js';
 import registerBackupsRoutes from './routes/backups.routes.js';
+import registerAuthRoutes from './routes/auth.routes.js';
 import envPlugin from './config/env.js';
 import mysqlPlugin from './db/mysql.js';
 import drizzlePlugin from './db/drizzle.js';
 import redisPlugin from './plugins/redis.js';
+import jwtPlugin from './plugins/jwt.plugin.js';
 import multipart from '@fastify/multipart';
 import { createBackup } from './utils/startup.js';
 import { initRepository } from './repositories/books.repository.js';
@@ -33,6 +35,8 @@ await fastify.register(envPlugin);
 await fastify.register(mysqlPlugin);
 await fastify.register(drizzlePlugin);
 await fastify.register(redisPlugin);
+await fastify.register(jwtPlugin);
+await fastify.register(import('@fastify/cookie'));
 
 initRepository(fastify.db);
 
@@ -60,7 +64,16 @@ await fastify.register(import('@fastify/swagger'), {
     },
     servers: [
       { url: `http://${fastify.config.HOST}:${fastify.config.PORT}` }
-    ]
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
   }
 });
 
@@ -86,6 +99,7 @@ await fastify.register(import('@fastify/static'), {
 });
 
 await fastify.register(registerBooksWsRoutes);
+await fastify.register(registerAuthRoutes);
 await fastify.register(registerRoutes, { prefix: '/api/v1' });
 await fastify.register(registerBackupsRoutes, { prefix: '/api/v1' });
 await fastify.register(registerRoutesV2, { prefix: '/api/v2' });
@@ -114,6 +128,10 @@ fastify.setErrorHandler((error, request, reply) => {
       message: 'Validation error',
       details: error.validation
     });
+  }
+
+  if (error.statusCode >= 400 && error.statusCode < 500) {
+    return reply.status(error.statusCode).send({ message: error.message });
   }
 
   reply.status(500).send({
