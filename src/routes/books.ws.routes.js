@@ -1,7 +1,9 @@
-import booksService from '../services/books.service.js';
+import { createBooksService } from '../services/books.service.js';
 import { booksEmitter } from '../events/books.emitter.js';
 
 export default async function (fastify) {
+  const booksService = createBooksService(fastify.redis);
+
   fastify.get('/ws', { websocket: true }, async (socket) => {
     const books = await booksService.getAll();
     socket.send(JSON.stringify({ event: 'init', data: books }));

@@ -1,24 +1,8 @@
-import fs from 'fs/promises';
-import path from 'path';
+import { REDIS_KEYS } from '../constants/redis.keys.js';
 
-const CACHE_FILE = path.join(process.cwd(), 'data', 'cache', 'reference.json');
-const CACHE_TTL_MS = 120_000;
+const CACHE_TTL_S = 120;
 const TIMEOUT_MS = 5_000;
 const MAX_RETRIES = 3;
-
-async function readCache() {
-  try {
-    const raw = await fs.readFile(CACHE_FILE, 'utf-8');
-    return JSON.parse(raw);
-  } catch {
-    return {};
-  }
-}
-
-async function writeCache(cache) {
-  await fs.mkdir(path.dirname(CACHE_FILE), { recursive: true });
-  await fs.writeFile(CACHE_FILE, JSON.stringify(cache, null, 2));
-}
 
 async function fetchWithTimeout(url) {
   const controller = new AbortController();
@@ -39,7 +23,7 @@ async function fetchWithRetry(url) {
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       return await fetchWithTimeout(url);
-    } catch (err) {
+    } catch {
       if (attempt < MAX_RETRIES - 1) {
         await new Promise((resolve) => setTimeout(resolve, delays[attempt]));
       }
@@ -49,23 +33,20 @@ async function fetchWithRetry(url) {
   return null;
 }
 
-export async function fetchExternalGenre(genreId) {
-  const cache = await readCache();
-  const key = String(genreId);
-  const entry = cache[key];
+export function createGenreFetcher(redis) {
+  return async function fetchExternalGenre(genreId) {
+    const key = REDIS_KEYS.GENRE(genreId);
+    const cached = await redis.get(key);
+    if (cached) return JSON.parse(cached);
 
-  if (entry && Date.now() - entry.cachedAt < CACHE_TTL_MS) {
-    return entry.data;
-  }
+    // eslint-disable-next-line no-process-env
+    const baseUrl = `http://${process.env.HOST}:${process.env.GENRES_API_PORT ?? 3001}`;
+    const data = await fetchWithRetry(`${baseUrl}/genres/${genreId}`);
 
-  // eslint-disable-next-line no-process-env
-  const baseUrl = `http://${process.env.HOST}:${process.env.GENRES_API_PORT ?? 3001}`;
-  const data = await fetchWithRetry(`${baseUrl}/genres/${genreId}`);
+    if (data) {
+      await redis.setex(key, CACHE_TTL_S, JSON.stringify(data));
+    }
 
-  if (data) {
-    cache[key] = { cachedAt: Date.now(), data };
-    await writeCache(cache);
-  }
-
-  return data;
+    return data;
+  };
 }

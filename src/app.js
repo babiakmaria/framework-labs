@@ -10,6 +10,7 @@ import registerBackupsRoutes from './routes/backups.routes.js';
 import envPlugin from './config/env.js';
 import mysqlPlugin from './db/mysql.js';
 import drizzlePlugin from './db/drizzle.js';
+import redisPlugin from './plugins/redis.js';
 import multipart from '@fastify/multipart';
 import { createBackup } from './utils/startup.js';
 import { initRepository } from './repositories/books.repository.js';
@@ -31,6 +32,7 @@ const fastify = Fastify({
 await fastify.register(envPlugin);
 await fastify.register(mysqlPlugin);
 await fastify.register(drizzlePlugin);
+await fastify.register(redisPlugin);
 
 initRepository(fastify.db);
 
@@ -70,11 +72,12 @@ await fastify.register(import('@fastify/rate-limit'), {
   global: true,
   max: 100,
   timeWindow: '1 minute',
+  redis: fastify.redis,
   errorResponseBuilder: () => ({
     statusCode: 429,
     error: 'Too Many Requests',
-    message: 'Rate limit exceeded. Try again in 1 minute.'
-  })
+    message: 'Rate limit exceeded. Try again in 1 minute.',
+  }),
 });
 
 await fastify.register(import('@fastify/static'), {
