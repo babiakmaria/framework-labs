@@ -8,11 +8,22 @@ import {
   deleteBookSchema,
 } from '../schemas/books.schemas.js';
 
+async function requireAuth(request, reply) {
+  if (!request.session.get('userId')) {
+    return reply.status(401).send({
+      statusCode: 401,
+      error: 'Unauthorized',
+      message: 'Authentication required',
+    });
+  }
+}
+
 export default async function (fastify) {
   const booksService = createBooksService(fastify.redis);
   const fetchGenre = createGenreFetcher(fastify.redis);
   const ctrl = createBooksController(booksService, fetchGenre);
 
+  // Public routes (no auth required)
   fastify.get(
     '/items/export',
     {
@@ -29,10 +40,6 @@ export default async function (fastify) {
   );
 
   fastify.get('/items/stream', ctrl.streamItems);
-
-  fastify.post('/items/import', ctrl.importItems);
-
-  fastify.post('/items/:id/image', ctrl.uploadImage);
 
   fastify.get(
     '/items/:id/details',
@@ -68,59 +75,68 @@ export default async function (fastify) {
     ctrl.getById
   );
 
-  fastify.post('/books', createBookSchema, ctrl.create);
+  // Protected routes — onRequest hook applied at the router level
+  fastify.register(async function protectedRoutes(fastify) {
+    fastify.addHook('onRequest', requireAuth);
 
-  fastify.put(
-    '/books/:id',
-    {
-      ...updateBookSchema,
-      schema: {
-        ...updateBookSchema.schema,
-        params: {
-          type: 'object',
-          required: ['id'],
-          properties: {
-            id: { type: 'string' },
+    fastify.post('/items/import', ctrl.importItems);
+
+    fastify.post('/items/:id/image', ctrl.uploadImage);
+
+    fastify.post('/books', createBookSchema, ctrl.create);
+
+    fastify.put(
+      '/books/:id',
+      {
+        ...updateBookSchema,
+        schema: {
+          ...updateBookSchema.schema,
+          params: {
+            type: 'object',
+            required: ['id'],
+            properties: {
+              id: { type: 'string' },
+            },
           },
         },
       },
-    },
-    ctrl.update
-  );
+      ctrl.update
+    );
 
-  fastify.patch(
-    '/books/:id',
-    {
-      ...updateBookSchema,
-      schema: {
-        ...updateBookSchema.schema,
-        params: {
-          type: 'object',
-          required: ['id'],
-          properties: {
-            id: { type: 'string' },
+    fastify.patch(
+      '/books/:id',
+      {
+        ...updateBookSchema,
+        schema: {
+          ...updateBookSchema.schema,
+          params: {
+            type: 'object',
+            required: ['id'],
+            properties: {
+              id: { type: 'string' },
+            },
           },
         },
       },
-    },
-    ctrl.patch
-  );
+      ctrl.patch
+    );
 
-  fastify.delete(
-    '/books/:id',
-    {
-      ...deleteBookSchema,
-      schema: {
-        ...deleteBookSchema.schema,
-        params: {
-          type: 'object',
-          required: ['id'],
-          properties: {
-            id: { type: 'string' },
+    fastify.delete(
+      '/books/:id',
+      {
+        ...deleteBookSchema,
+        schema: {
+          ...deleteBookSchema.schema,
+          params: {
+            type: 'object',
+            required: ['id'],
+            properties: {
+              id: { type: 'string' },
+            },
           },
         },
       },
-    },
-    ctrl.delete
-  );
+      ctrl.delete
+    );
+  });
 }

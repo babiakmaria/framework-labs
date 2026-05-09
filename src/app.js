@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import addFormats from 'ajv-formats';
 import path from 'path';
 import registerRoutes from './routes/books.routes.js';
 import registerRoutesV2 from './routes/books.routes.v2.js';
@@ -7,15 +8,20 @@ import registerGithubRoutesV2 from './routes/github.routes.v2.js';
 import registerHealthRoutes from './routes/health.routes.js';
 import registerBooksWsRoutes from './routes/books.ws.routes.js';
 import registerBackupsRoutes from './routes/backups.routes.js';
+import registerAuthRoutes from './routes/auth.routes.js';
 import envPlugin from './config/env.js';
 import mysqlPlugin from './db/mysql.js';
 import drizzlePlugin from './db/drizzle.js';
 import redisPlugin from './plugins/redis.js';
+import sessionPlugin from './plugins/session.js';
 import multipart from '@fastify/multipart';
 import { createBackup } from './utils/startup.js';
 import { initRepository } from './repositories/books.repository.js';
 
 const fastify = Fastify({
+  ajv: {
+    plugins: [addFormats],
+  },
   // eslint-disable-next-line no-process-env
   logger: process.env.NODE_ENV === 'development'
     ? {
@@ -33,6 +39,7 @@ await fastify.register(envPlugin);
 await fastify.register(mysqlPlugin);
 await fastify.register(drizzlePlugin);
 await fastify.register(redisPlugin);
+await fastify.register(sessionPlugin);
 
 initRepository(fastify.db);
 
@@ -60,7 +67,10 @@ await fastify.register(import('@fastify/swagger'), {
     },
     servers: [
       { url: `http://${fastify.config.HOST}:${fastify.config.PORT}` }
-    ]
+    ],
+    tags: [
+      { name: 'Auth', description: 'Authentication endpoints' },
+    ],
   }
 });
 
@@ -86,6 +96,7 @@ await fastify.register(import('@fastify/static'), {
 });
 
 await fastify.register(registerBooksWsRoutes);
+await fastify.register(registerAuthRoutes, { prefix: '/auth' });
 await fastify.register(registerRoutes, { prefix: '/api/v1' });
 await fastify.register(registerBackupsRoutes, { prefix: '/api/v1' });
 await fastify.register(registerRoutesV2, { prefix: '/api/v2' });
