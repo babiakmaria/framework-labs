@@ -1,0 +1,18 @@
+node_modules
+.git
+.gitignore
+.env
+.env.*
+src/tests
+vitest.config.js
+coverage
+eslint.config.js
+.prettierrc
+.prettierignore
+.editorconfig
+db.json
+# backup files generated at runtime — not needed in build context
+data/backups
+
+.DS_Store
+*.log

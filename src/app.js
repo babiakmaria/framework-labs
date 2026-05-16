@@ -170,7 +170,7 @@ process.on('unhandledRejection', (err) => {
 
 const start = async () => {
   try {
-    await fastify.listen({ port: fastify.config.PORT });
+    await fastify.listen({ port: fastify.config.PORT, host: fastify.config.HOST });
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

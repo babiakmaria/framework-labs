@@ -1,0 +1,28 @@
+# Automatically merged with docker-compose.yml when running `docker compose up`.
+# Overrides production settings for local development.
+services:
+
+  app:
+    build:
+      context: .
+      target: development   # dev stage: all deps + node --watch
+    environment:
+      NODE_ENV: development
+      HOST: 0.0.0.0
+    volumes:
+      # live-reload: source changes on host are reflected instantly in container
+      - ./src:/app/src
+      - ./drizzle:/app/drizzle
+      - ./drizzle.config.js:/app/drizzle.config.js
+    # no restart in dev — let it crash visibly
+    restart: "no"
+
+  mysql:
+    # exposed on a non-standard port to avoid conflict with a local MySQL instance
+    ports:
+      - "3307:3306"
+
+  redis:
+    # expose Redis to the host so you can connect from redis-cli or RedisInsight
+    ports:
+      - "6379:6379"
